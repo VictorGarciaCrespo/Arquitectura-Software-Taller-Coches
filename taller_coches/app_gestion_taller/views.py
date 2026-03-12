@@ -6,13 +6,26 @@ import json
 from .models import Cliente, Coche, Servicio, CocheServicio
 
 def lista_clientes(request):
-    clientes = list(Cliente.objects.values("id", "nombre", "telefono", "email"))
-    return JsonResponse(clientes, safe=False)
+    #clientes = list(Cliente.objects.values("id", "nombre", "telefono", "email"))
+    #return JsonResponse(clientes, safe=False)
+    clientes = Cliente.objects.all()
+    return render(request, 'app_gestion_taller/lista_clientes.html', {'clientes': clientes})
+
 
 def detalle_cliente(request, cliente_id):
+    #try:
+    #    cliente = Cliente.objects.values("id", "nombre", "telefono", "email").get(id=cliente_id)
+    #    return JsonResponse(cliente)
+    #except Cliente.DoesNotExist:
+    #    return JsonResponse({"error": "Cliente no encontrado"}, status=404)
     try:
-        cliente = Cliente.objects.values("id", "nombre", "telefono", "email").get(id=cliente_id)
-        return JsonResponse(cliente)
+        cliente = Cliente.objects.get(id=cliente_id)
+        coches = Coche.objects.filter(cliente=cliente)
+        contexto = {
+            'cliente': cliente,
+            'coches': coches,
+        }
+        return render(request, 'app_gestion_taller/detalle_cliente.html', contexto)
     except Cliente.DoesNotExist:
         return JsonResponse({"error": "Cliente no encontrado"}, status=404)
     
@@ -33,6 +46,7 @@ def registrar_cliente(request):
 
 @csrf_exempt
 def registrar_coche(request):
+    
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -49,6 +63,8 @@ def registrar_coche(request):
         except KeyError:
             return JsonResponse({"error": "Datos incompletos"}, status=400)
     return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
 
 @csrf_exempt
 def registrar_servicio(request):
@@ -114,6 +130,7 @@ def buscar_coches_cliente(request, cliente_id):
 
 @csrf_exempt
 def buscar_servicios_de_coche(request, coche_id):
+    """
     try:
         coche = Coche.objects.get(id=coche_id)
         servicios = list(
@@ -134,6 +151,19 @@ def buscar_servicios_de_coche(request, coche_id):
     except Coche.DoesNotExist:
         return JsonResponse({"error": "Coche no encontrado"}, status=404)
 
+    """
+    #Nuevo
+    try:
+        coche = Coche.objects.get(id=coche_id)
+        coche_servicios = CocheServicio.objects.filter(coche=coche).select_related('servicio')
+        contexto = {
+            'coche': coche,
+            'coche_servicios': coche_servicios,
+        }
+        return render(request, 'app_gestion_taller/servicios_coche.html', contexto)
+    except Coche.DoesNotExist:
+        return JsonResponse({"error": "Coche no encontrado"}, status=404)
+    
 
 
 @csrf_exempt
